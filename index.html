@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Astro IA — Tu diario cósmico</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0e0b1a;
+    --parchment: #f5f0e8;
+    --gold: #c9a84c;
+    --gold-dim: #8b6e2e;
+    --rust: #8b3a2a;
+    --indigo: #2d2560;
+    --violet: #5b3fa0;
+    --cream: #fdf8f0;
+    --muted: #6b6278;
+    --border: rgba(201,168,76,0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'EB Garamond', Georgia, serif;
+    background: var(--ink);
+    color: var(--parchment);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Starfield */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 5%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 50% 25%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 10%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 20%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 20% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 60% 60%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 75%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 75% 45%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5% 55%, rgba(255,255,255,0.3) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(45,37,96,0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(91,63,160,0.2) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sigil {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+    filter: drop-shadow(0 0 8px rgba(201,168,76,0.5));
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 20px rgba(201,168,76,0.3);
+  }
+
+  .subtitle {
+    font-style: italic;
+    color: var(--muted);
+    font-size: 1rem;
+    margin-top: 0.3rem;
+  }
+
+  /* Nav tabs */
+  nav {
+    display: flex;
+    gap: 0.3rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    padding: 0.7rem 1.2rem;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .tab-btn:hover { color: var(--gold); }
+  .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  /* Panels */
+  .panel { display: none; animation: fadeIn 0.4s ease; }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Cards */
+  .card {
+    background: rgba(14, 11, 26, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.2rem;
+    backdrop-filter: blur(4px);
+  }
+
+  .card-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    margin-bottom: 1rem;
+  }
+
+  /* Forms */
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+    margin-top: 0.8rem;
+    font-family: 'Cinzel', serif;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--parchment);
+    font-family: 'EB Garamond', serif;
+    font-size: 0.95rem;
+    padding: 0.6rem 0.8rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--gold);
+  }
+
+  select option { background: #1a1530; }
+
+  textarea { resize: vertical; min-height: 90px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; }
+
+  /* Buttons */
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    padding: 0.65rem 1.4rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+  }
+
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .btn-gold:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid rgba(139,58,42,0.4);
+    color: var(--rust);
+    font-size: 0.65rem;
+    padding: 0.3rem 0.7rem;
+    margin-top: 0;
+  }
+  .btn-danger:hover { background: rgba(139,58,42,0.15); }
+
+  /* Saved items list */
+  .item-list { display: flex; flex-direction: column; gap: 0.7rem; }
+
+  .item-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .item-card:hover { background: rgba(201,168,76,0.06); border-color: rgba(201,168,76,0.5); }
+
+  .item-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--parchment);
+  }
+
+  .item-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 0.2rem;
+  }
+
+  /* AI response */
+  .ai-response {
+    background: rgba(45,37,96,0.25);
+    border: 1px solid rgba(91,63,160,0.4);
+    border-radius: 6px;
+    padding: 1.3rem 1.5rem;
+    margin-top: 1.2rem;
+    line-height: 1.75;
+    font-size: 1rem;
+    white-space: pre-wrap;
+    color: #e8e0f5;
+  }
+
+  .ai-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--violet);
+    margin-bottom: 0.7rem;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(201,168,76,0.3);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Planet chip picker */
+  .planet-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+  }
+
+  .planet-chip {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.15s;
+  }
+
+  .planet-chip.selected {
+    background: rgba(201,168,76,0.15);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  /* Diary entries */
+  .diary-entry {
+    border-left: 2px solid var(--border);
+    padding-left: 1rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .diary-date {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--gold-dim);
+  }
+
+  .diary-text {
+    margin-top: 0.4rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--parchment);
+    white-space: pre-wrap;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    margin-right: 0.3rem;
+    margin-top: 0.4rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.05em;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2.5rem;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+  }
+
+  /* Orb/aspect display */
+  .aspect-pill {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(201,168,76,0.1);
+    border: 1px solid var(--border);
+    color: var(--gold-dim);
+    margin: 0.2rem;
+    font-family: 'Cinzel', serif;
+  }
+
+  @media (max-width: 600px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .tab-btn { font-size: 0.65rem; padding: 0.6rem 0.8rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <span class="sigil">☽ ✦ ☾</span>
+    <h1>ASTRO IA</h1>
+    <p class="subtitle">Tu cuaderno cósmico con inteligencia artificial</p>
+  </header>
+
+  <nav>
+    <button class="tab-btn active" onclick="switchTab('cartas')">♃ Cartas Natales</button>
+    <button class="tab-btn" onclick="switchTab('transitos')">♄ Tránsitos</button>
+    <button class="tab-btn" onclick="switchTab('diario')">☽ Diario</button>
+    <button class="tab-btn" onclick="switchTab('correlacion')">✦ Correlaciones</button>
+    <button class="tab-btn" onclick="switchTab('consulta')">☿ Consulta Libre</button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- TAB: CARTAS NATALES -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="tab-cartas" class="panel active">
+
+    <div class="card">
+      <div class="card-title">NUEVA CARTA NATAL</div>
+      <label>Nombre / Persona</label>
+      <input type="text" id="cn-nombre" placeholder="Tu nombre o el de la persona">
+
+      <div class="grid-2">
+        <div>
+          <label>Fecha de nacimiento</label>
+          <input type="date" id="cn-fecha">
+        </div>
+        <div>
+          <label>Hora de nacimiento</label>
+          <input type="time" id="cn-hora">
+        </div>
+      </div>
+
+      <label>Lugar de nacimiento</label>
+      <input type="text" id="cn-lugar" placeholder="Ciudad, País">
+
+      <label>Sol en</label>
+      <select id="cn-sol">
+        <option value="">— Signo solar —</option>
+        <option>Aries ♈</option><option>Tauro ♉</option><option>Géminis ♊</option>
+        <option>Cáncer ♋</option><option>Leo ♌</option><option>Virgo ♍</option>
+        <option>Libra ♎</option><option>Escorpio ♏</option><option>Sagitario ♐</option>
+        <option>Capricornio ♑</option><option>Acuario ♒</option><option>Piscis ♓</option>
+      </select>
+
+      <div class="grid-3">
+        <div>
+          <label>Luna en</label>
+          <select id="cn-luna"><option value="">— Luna —</option>
+            <option>Aries ♈</option><option>Tauro ♉</option><option>Géminis ♊</option>
+            <option>Cáncer ♋</option><option>Leo ♌</option><option>Virgo ♍</option>
+            <option>Libra ♎</option><option>Escorpio ♏</option><option>Sagitario ♐</option>
+            <option>Capricornio ♑</option><option>Acuario ♒</option><option>Piscis ♓</option>
+          </select>
+        </div>
+        <div>
+          <label>Ascendente</label>
+          <select id="cn-asc"><option value="">— ASC —</option>
+            <option>Aries ♈</option><option>Tauro ♉</option><option>Géminis ♊</option>
+            <option>Cáncer ♋</option><option>Leo ♌</option><option>Virgo ♍</option>
+            <option>Libra ♎</option><option>Escorpio ♏</option><option>Sagitario ♐</option>
+            <option>Capricornio ♑</option><option>Acuario ♒</option><option>Piscis ♓</option>
+          </select>
+        </div>
+        <div>
+          <label>MC (Medio Cielo)</label>
+          <select id="cn-mc"><option value="">— MC —</option>
+            <option>Aries ♈</option><option>Tauro ♉</option><option>Géminis ♊</option>
+            <option>Cáncer ♋</option><option>Leo ♌</option><option>Virgo ♍</option>
+            <option>Libra ♎</option><option>Escorpio ♏</option><option>Sagitario ♐</option>
+            <option>Capricornio ♑</option><option>Acuario ♒</option><option>Piscis ♓</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Posiciones adicionales (planetas personales, etc.)</label>
+      <textarea id="cn-extra" placeholder="Ej: Mercurio en Escorpio, Venus en Libra, Marte en Aries, Júpiter en 11, Quirón en Piscis, Nodo Norte en Capricornio..."></textarea>
+
+      <label>Aspectos importantes</label>
+      <textarea id="cn-aspectos" placeholder="Ej: Sol cuadratura Saturno, Luna trígono Júpiter, Plutón conjunción ASC..."></textarea>
+
+      <label>Notas / Observaciones</label>
+      <textarea id="cn-notas" placeholder="Cualquier dato relevante de esta carta"></textarea>
+
+      <div style="display:flex;gap:0.8rem;flex-wrap:wrap">
+        <button class="btn btn-gold" onclick="guardarCarta()">Guardar carta</button>
+        <button class="btn btn-outline" onclick="analizarCarta()">Analizar con IA</button>
+      </div>
+    </div>
+
+    <div id="analisis-carta"></div>
+
+    <!-- Lista de cartas guardadas -->
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title">CARTAS GUARDADAS</span>
+      </div>
+      <div id="lista-cartas" class="item-list">
+        <div class="empty-state">Aún no guardaste ninguna carta natal</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- TAB: TRÁNSITOS -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="tab-transitos" class="panel">
+    <div class="card">
+      <div class="card-title">ANÁLISIS DE TRÁNSITOS</div>
+
+      <label>¿Para qué carta natal?</label>
+      <select id="tr-carta">
+        <option value="">— Seleccioná una carta guardada —</option>
+      </select>
+
+      <label>Fecha del tránsito (o rango)</label>
+      <div class="grid-2">
+        <div>
+          <input type="date" id="tr-fecha-desde" placeholder="Desde">
+        </div>
+        <div>
+          <input type="date" id="tr-fecha-hasta" placeholder="Hasta">
+        </div>
+      </div>
+
+      <label>Tránsitos actuales o a analizar</label>
+      <textarea id="tr-datos" placeholder="Ej: Saturno tránsita por casa 7, Júpiter en conjunción al Sol natal, Eclipse solar en 23° Aries, Plutón en sextil a Venus natal..."></textarea>
+
+      <label>Tipo de análisis</label>
+      <select id="tr-tipo">
+        <option value="general">Visión general del período</option>
+        <option value="temas">Temas principales que activa</option>
+        <option value="oportunidades">Oportunidades y desafíos</option>
+        <option value="timing">Timing y momentos clave</option>
+        <option value="revolucion">Revolución Solar</option>
+        <option value="eclipse">Interpretación de eclipse</option>
+      </select>
+
+      <label>Contexto personal (opcional)</label>
+      <textarea id="tr-contexto" placeholder="¿Qué está pasando en tu vida ahora? Esto ayuda a la IA a contextualizar el análisis..."></textarea>
+
+      <button class="btn btn-gold" onclick="analizarTransito()">Analizar tránsito</button>
+    </div>
+
+    <div id="resultado-transito"></div>
+
+    <!-- Historial de tránsitos -->
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title">HISTORIAL DE ANÁLISIS</span>
+        <button class="btn btn-outline" style="margin-top:0;font-size:0.65rem;padding:0.3rem 0.8rem" onclick="limpiarTransitos()">Limpiar</button>
+      </div>
+      <div id="lista-transitos" class="item-list">
+        <div class="empty-state">Ningún análisis guardado aún</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- TAB: DIARIO -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="tab-diario" class="panel">
+    <div class="card">
+      <div class="card-title">NUEVA ENTRADA DE DIARIO</div>
+
+      <div class="grid-2">
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="diar-fecha">
+        </div>
+        <div>
+          <label>Estado de ánimo / energía</label>
+          <select id="diar-energia">
+            <option value="">— Cómo te sentís —</option>
+            <option>☀️ Muy expansivo</option>
+            <option>🌤 Bien, fluido</option>
+            <option>🌦 Irregular, tenso</option>
+            <option>🌩 Pesado, bloqueado</option>
+            <option>🌙 Introspectivo, quieto</option>
+            <option>✨ Muy receptivo / emocional</option>
+          </select>
+        </div>
+      </div>
+
+      <label>¿Qué pasó hoy / en este período?</label>
+      <textarea id="diar-evento" placeholder="Describí los eventos, sensaciones o situaciones del día..."></textarea>
+
+      <label>Luna actual (signo / fase)</label>
+      <input type="text" id="diar-luna" placeholder="Ej: Luna en Escorpio, menguante">
+
+      <label>Tránsitos del día (opcional)</label>
+      <input type="text" id="diar-transitos" placeholder="Ej: Marte activa mi Venus natal hoy">
+
+      <label>Áreas de vida</label>
+      <div class="planet-grid" id="areas-chips">
+        <button class="planet-chip" onclick="toggleChip(this)">Trabajo</button>
+        <button class="planet-chip" onclick="toggleChip(this)">Vínculos</button>
+        <button class="planet-chip" onclick="toggleChip(this)">Amor</button>
+        <button class="planet-chip" onclick="toggleChip(this)">Cuerpo</button>
+        <button class="planet-chip" onclick="toggleChip(this)">Mente</button>
+        <button class="planet-chip" onclick="toggleChip(this)">Dinero</button>
+        <button class="planet-chip" onclick="toggleChip(this)">Creatividad</button>
+        <button class="planet-chip" onclick="toggleChip(this)">Espiritualidad</button>
+        <button class="planet-chip" onclick="toggleChip(this)">Familia</button>
+        <button class="planet-chip" onclick="toggleChip(this)">Identidad</button>
+      </div>
+
+      <label>Reflexión / Interpretación propia</label>
+      <textarea id="diar-reflexion" placeholder="¿Cómo lo interpretás astrológicamente? ¿Qué patrón ves?"></textarea>
+
+      <div style="display:flex;gap:0.8rem;flex-wrap:wrap">
+        <button class="btn btn-gold" onclick="guardarEntrada()">Guardar entrada</button>
+        <button class="btn btn-outline" onclick="analizarEntrada()">Interpretar con IA</button>
+      </div>
+    </div>
+
+    <div id="resultado-diario"></div>
+
+    <!-- Entradas guardadas -->
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title">ENTRADAS DEL DIARIO</span>
+      </div>
+      <div id="lista-diario">
+        <div class="empty-state">El diario está vacío. ¡Empezá a escribir!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- TAB: CORRELACIONES -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="tab-correlacion" class="panel">
+    <div class="card">
+      <div class="card-title">CORRELACIONAR EVENTO CON PLANETAS</div>
+
+      <label>Evento o patrón a analizar</label>
+      <textarea id="cor-evento" placeholder="Describí el evento o patrón que querés correlacionar con posiciones planetarias...&#10;&#10;Ej: Cada vez que Marte toca mi eje 1/7 tengo conflictos de pareja. Últimamente me siento muy aislada y quiero ver qué planetas lo activan..."></textarea>
+
+      <label>¿Tenés datos de cuándo ocurrió?</label>
+      <textarea id="cor-fechas" placeholder="Ej: Sucedió entre octubre y diciembre 2023, se repitió en marzo 2024..."></textarea>
+
+      <label>Carta natal de referencia</label>
+      <select id="cor-carta">
+        <option value="">— Seleccioná una carta guardada —</option>
+      </select>
+
+      <label>Hipótesis propia (opcional)</label>
+      <input type="text" id="cor-hipotesis" placeholder="Ej: Creo que tiene que ver con Saturno en tránsito por casa 4">
+
+      <button class="btn btn-gold" onclick="analizarCorrelacion()">Buscar correlación con IA</button>
+    </div>
+
+    <div id="resultado-correlacion"></div>
+
+    <!-- Sinastría -->
+    <div class="card" style="margin-top:1.5rem">
+      <div class="card-title">SINASTRÍA RÁPIDA</div>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;font-style:italic">Comparar dos cartas guardadas</p>
+
+      <div class="grid-2">
+        <div>
+          <label>Carta 1</label>
+          <select id="sin-carta1">
+            <option value="">— Persona 1 —</option>
+          </select>
+        </div>
+        <div>
+          <label>Carta 2</label>
+          <select id="sin-carta2">
+            <option value="">— Persona 2 —</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Aspectos de sinastría a analizar</label>
+      <textarea id="sin-aspectos" placeholder="Ej: Sol de A conjunción Luna de B, Venus de A en cuadratura Marte de B...&#10;O dejá vacío y pedile a la IA que analice con los datos de las cartas."></textarea>
+
+      <label>Foco del análisis</label>
+      <select id="sin-foco">
+        <option value="general">Compatibilidad general</option>
+        <option value="amor">Atracción y vínculo romántico</option>
+        <option value="trabajo">Vínculo profesional o colaborativo</option>
+        <option value="karma">Karma y contratos de alma</option>
+        <option value="desafios">Tensiones y puntos de crecimiento</option>
+      </select>
+
+      <button class="btn btn-gold" onclick="analizarSinastria()">Analizar sinastría</button>
+    </div>
+
+    <div id="resultado-sinastria"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- TAB: CONSULTA LIBRE -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="tab-consulta" class="panel">
+    <div class="card">
+      <div class="card-title">CONSULTA LIBRE A LA IA</div>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;font-style:italic">Hacé cualquier pregunta astrológica. Podés incluir cartas guardadas como contexto.</p>
+
+      <label>Incluir carta natal como contexto</label>
+      <select id="cons-carta">
+        <option value="">— Sin carta de referencia —</option>
+      </select>
+
+      <label>Tu pregunta</label>
+      <textarea id="cons-pregunta" placeholder="Preguntá lo que quieras:&#10;• ¿Qué significa tener a Quirón en casa 12?&#10;• ¿Cómo afecta Plutón en Acuario a mi stellium en Leo?&#10;• Interpretá este aspecto en mi carta...&#10;• ¿Cuándo es buen momento para tomar decisiones de acuerdo a mis tránsitos?&#10;• Explicame la diferencia entre progresiones secundarias y tránsitos..."></textarea>
+
+      <button class="btn btn-gold" onclick="consultaLibre()">Enviar consulta</button>
+    </div>
+
+    <div id="resultado-consulta"></div>
+
+    <!-- Historial de consultas -->
+    <div class="card" id="historial-consultas-card" style="display:none">
+      <div class="section-header">
+        <span class="section-title">HISTORIAL</span>
+        <button class="btn btn-outline" style="margin-top:0;font-size:0.65rem;padding:0.3rem 0.8rem" onclick="limpiarHistorial()">Limpiar</button>
+      </div>
+      <div id="historial-consultas"></div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA STORAGE (localStorage)
+// ═══════════════════════════════════════════════════════
+const KEYS = {
+  cartas: 'astro_cartas',
+  diario: 'astro_diario',
+  transitos: 'astro_transitos',
+  historial: 'astro_historial'
+};
+
+function getData(key) {
+  try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
+}
+function setData(key, val) {
+  localStorage.setItem(key, JSON.stringify(val));
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+  actualizarSelects();
+}
+
+// ═══════════════════════════════════════════════════════
+// SELECTS DE CARTAS (poblado dinámicamente)
+// ═══════════════════════════════════════════════════════
+function actualizarSelects() {
+  const cartas = getData(KEYS.cartas);
+  const ids = ['tr-carta', 'cor-carta', 'sin-carta1', 'sin-carta2', 'cons-carta'];
+  ids.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const val = sel.value;
+    const placeholders = {
+      'tr-carta': '— Seleccioná una carta guardada —',
+      'cor-carta': '— Seleccioná una carta guardada —',
+      'sin-carta1': '— Persona 1 —',
+      'sin-carta2': '— Persona 2 —',
+      'cons-carta': '— Sin carta de referencia —'
+    };
+    sel.innerHTML = `<option value="">${placeholders[id]}</option>`;
+    cartas.forEach((c, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = c.nombre + (c.sol ? ` · Sol ${c.sol}` : '');
+      sel.appendChild(opt);
+    });
+    sel.value = val;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// CHIPS
+// ═══════════════════════════════════════════════════════
+function toggleChip(el) { el.classList.toggle('selected'); }
+
+function getSelectedChips() {
+  return [...document.querySelectorAll('#areas-chips .selected')].map(c => c.textContent);
+}
+
+// ═══════════════════════════════════════════════════════
+// CARTAS NATALES
+// ═══════════════════════════════════════════════════════
+function getCarta() {
+  return {
+    nombre: document.getElementById('cn-nombre').value.trim(),
+    fecha: document.getElementById('cn-fecha').value,
+    hora: document.getElementById('cn-hora').value,
+    lugar: document.getElementById('cn-lugar').value.trim(),
+    sol: document.getElementById('cn-sol').value,
+    luna: document.getElementById('cn-luna').value,
+    asc: document.getElementById('cn-asc').value,
+    mc: document.getElementById('cn-mc').value,
+    extra: document.getElementById('cn-extra').value.trim(),
+    aspectos: document.getElementById('cn-aspectos').value.trim(),
+    notas: document.getElementById('cn-notas').value.trim(),
+    creado: new Date().toISOString()
+  };
+}
+
+function cartaTexto(c) {
+  let t = `Carta natal de ${c.nombre}\n`;
+  if (c.fecha) t += `Nacimiento: ${c.fecha}${c.hora ? ' a las ' + c.hora : ''}${c.lugar ? ' en ' + c.lugar : ''}\n`;
+  if (c.sol) t += `Sol: ${c.sol}\n`;
+  if (c.luna) t += `Luna: ${c.luna}\n`;
+  if (c.asc) t += `Ascendente: ${c.asc}\n`;
+  if (c.mc) t += `Medio Cielo: ${c.mc}\n`;
+  if (c.extra) t += `Planetas y posiciones adicionales: ${c.extra}\n`;
+  if (c.aspectos) t += `Aspectos: ${c.aspectos}\n`;
+  if (c.notas) t += `Notas: ${c.notas}\n`;
+  return t;
+}
+
+function guardarCarta() {
+  const c = getCarta();
+  if (!c.nombre) return alert('Ingresá al menos el nombre');
+  const cartas = getData(KEYS.cartas);
+  cartas.push(c);
+  setData(KEYS.cartas, cartas);
+  renderCartas();
+  actualizarSelects();
+  alert(`Carta de ${c.nombre} guardada ✓`);
+}
+
+function renderCartas() {
+  const cartas = getData(KEYS.cartas);
+  const cont = document.getElementById('lista-cartas');
+  if (!cartas.length) {
+    cont.innerHTML = '<div class="empty-state">Aún no guardaste ninguna carta natal</div>';
+    return;
+  }
+  cont.innerHTML = cartas.map((c, i) => `
+    <div class="item-card">
+      <div>
+        <div class="item-name">${c.nombre}</div>
+        <div class="item-meta">${c.fecha || ''} ${c.lugar ? '· ' + c.lugar : ''} ${c.sol ? '· Sol ' + c.sol : ''} ${c.asc ? '· ASC ' + c.asc : ''}</div>
+      </div>
+      <button class="btn btn-danger" onclick="eliminarCarta(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function eliminarCarta(i) {
+  if (!confirm('¿Eliminar esta carta?')) return;
+  const cartas = getData(KEYS.cartas);
+  cartas.splice(i, 1);
+  setData(KEYS.cartas, cartas);
+  renderCartas();
+  actualizarSelects();
+}
+
+async function analizarCarta() {
+  const c = getCarta();
+  if (!c.nombre && !c.sol) return alert('Completá al menos algunos datos de la carta');
+  const cont = document.getElementById('analisis-carta');
+  cont.innerHTML = `<div class="ai-response"><div class="ai-label">✦ ANÁLISIS IA</div><span class="spinner"></span> Leyendo la carta...</div>`;
+
+  const prompt = `${SISTEMA_BASE}
+
+Analizá la siguiente carta natal integrando TODOS los marcos del sistema. Hablá en español argentino, de manera cálida y directa.
+
+${cartaTexto(c)}
+
+Estructurá el análisis así:
+
+🜂 ASTROLOGÍA EVOLUTIVA (Green/Forrest)
+— Misión del alma, herida kármica central, Nodo Norte como dirección evolutiva, patrones que el alma viene a trascender.
+
+🜁 ASTROLOGÍA PSICOLÓGICA (Greene/Sasportas)
+— Arquetipos en tensión, complejos psicológicos visibles en la carta, proceso de individuación, sombra y proyecciones probables.
+
+🜄 ASTROGENEALOGÍA
+— Qué mandatos, lealtades o traumas familiares pueden leerse en la carta. Qué planeta o aspecto sugiere un "encargo" del árbol. Qué podría estar repitiendo o intentando sanar de sus ancestros.
+
+🜃 TAROT (Rider-Waite) + NUMEROLOGÍA
+— Arcano Mayor que corresponde al número de vida o al Sol/ASC. Carta(s) del tarot que resuena con la energía central de esta carta natal y por qué. Número de vida si hay fecha de nacimiento.
+
+⚗ PSICOMAGIA (Jodorowsky)
+— Un acto psicomágico concreto y creativo que podría sanar la herida principal visible en la carta. Que sea simbólico, corporal y preciso.
+
+✦ SÍNTESIS INTEGRADORA
+— Una síntesis breve que teja todos los hilos. Una frase que capture la esencia del alma de esta carta.
+
+Sé específico y evitá generalidades. Usá los datos de la carta para anclar cada punto.`;
+
+  try {
+    const res = await callClaude(prompt);
+    cont.innerHTML = `<div class="ai-response"><div class="ai-label">✦ ANÁLISIS DE CARTA NATAL · ${c.nombre}</div>${res}</div>`;
+  } catch(e) {
+    cont.innerHTML = `<div class="ai-response" style="border-color:rgba(139,58,42,0.4)">Error al conectar con la IA: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// TRÁNSITOS
+// ═══════════════════════════════════════════════════════
+async function analizarTransito() {
+  const idxCarta = document.getElementById('tr-carta').value;
+  const cartas = getData(KEYS.cartas);
+  const cartaRef = idxCarta !== '' ? cartas[parseInt(idxCarta)] : null;
+  const datos = document.getElementById('tr-datos').value.trim();
+  const tipo = document.getElementById('tr-tipo').value;
+  const contexto = document.getElementById('tr-contexto').value.trim();
+  const desde = document.getElementById('tr-fecha-desde').value;
+  const hasta = document.getElementById('tr-fecha-hasta').value;
+
+  if (!datos) return alert('Ingresá los tránsitos a analizar');
+
+  const cont = document.getElementById('resultado-transito');
+  cont.innerHTML = `<div class="ai-response"><div class="ai-label">☄ ANÁLISIS EN CURSO</div><span class="spinner"></span> Leyendo los tránsitos...</div>`;
+
+  const tiposMap = {
+    general: 'visión general del período, lo que activa y cómo navegarlo',
+    temas: 'temas principales que activan estos tránsitos en la vida de la persona',
+    oportunidades: 'oportunidades concretas y desafíos que presentan estos tránsitos',
+    timing: 'timing específico, momentos pico y cómo trabajar con la energía',
+    revolucion: 'interpretación de la Revolución Solar como mapa del año',
+    eclipse: 'interpretación del eclipse y su impacto en la carta natal'
+  };
+
+  let prompt = `${SISTEMA_BASE}\n\n`;
+  if (cartaRef) prompt += `CARTA NATAL DE REFERENCIA:\n${cartaTexto(cartaRef)}\n\n`;
+  prompt += `TRÁNSITOS A ANALIZAR:\n${datos}\n`;
+  if (desde || hasta) prompt += `Período: ${desde || '?'} al ${hasta || '?'}\n`;
+  if (contexto) prompt += `\nCONTEXTO PERSONAL:\n${contexto}\n`;
+  prompt += `\nTipo de análisis solicitado: ${tiposMap[tipo]}
+
+Integrá TODOS los marcos del sistema en el análisis:
+
+🜂 EVOLUTIVO: qué está siendo llamado a evolucionar, qué karma o patrón del alma activa este tránsito.
+🜁 PSICOLÓGICO: qué complejo, arquetipo o proceso de individuación se activa.
+🜄 ASTROGENEALOGÍA: si este tránsito toca algo que podría ser un mandato o herida familiar.
+🜃 TAROT: qué Arcano Mayor del Rider-Waite resuena con la energía de este tránsito y qué mensaje trae.
+⚗ PSICOMAGIA: un acto simbólico concreto para trabajar conscientemente con esta energía.
+✦ TIMING Y PRÁCTICA: cómo navegar este período de manera concreta.`;
+
+  try {
+    const res = await callClaude(prompt);
+    const fechaHoy = new Date().toLocaleDateString('es-AR');
+    cont.innerHTML = `<div class="ai-response"><div class="ai-label">☄ ANÁLISIS DE TRÁNSITO · ${fechaHoy}</div>${res}</div>`;
+
+    // Guardar en historial
+    const hist = getData(KEYS.transitos);
+    hist.unshift({ fecha: fechaHoy, datos: datos.substring(0, 80), res: res, cartaNombre: cartaRef?.nombre || '' });
+    setData(KEYS.transitos, hist.slice(0, 20));
+    renderTransitos();
+  } catch(e) {
+    cont.innerHTML = `<div class="ai-response" style="border-color:rgba(139,58,42,0.4)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderTransitos() {
+  const hist = getData(KEYS.transitos);
+  const cont = document.getElementById('lista-transitos');
+  if (!hist.length) {
+    cont.innerHTML = '<div class="empty-state">Ningún análisis guardado aún</div>';
+    return;
+  }
+  cont.innerHTML = hist.map(h => `
+    <div class="diary-entry">
+      <div class="diary-date">${h.fecha} ${h.cartaNombre ? '· ' + h.cartaNombre : ''}</div>
+      <div class="diary-text" style="font-size:0.85rem;color:var(--muted)">${h.datos}...</div>
+    </div>
+  `).join('');
+}
+
+function limpiarTransitos() {
+  if (!confirm('¿Limpiar el historial de tránsitos?')) return;
+  setData(KEYS.transitos, []);
+  renderTransitos();
+}
+
+// ═══════════════════════════════════════════════════════
+// DIARIO
+// ═══════════════════════════════════════════════════════
+function guardarEntrada() {
+  const entrada = {
+    fecha: document.getElementById('diar-fecha').value || new Date().toISOString().split('T')[0],
+    energia: document.getElementById('diar-energia').value,
+    evento: document.getElementById('diar-evento').value.trim(),
+    luna: document.getElementById('diar-luna').value.trim(),
+    transitos: document.getElementById('diar-transitos').value.trim(),
+    areas: getSelectedChips(),
+    reflexion: document.getElementById('diar-reflexion').value.trim(),
+    creado: new Date().toISOString()
+  };
+  if (!entrada.evento && !entrada.reflexion) return alert('Escribí algo para guardar');
+  const diario = getData(KEYS.diario);
+  diario.unshift(entrada);
+  setData(KEYS.diario, diario);
+  renderDiario();
+  // Reset chips
+  document.querySelectorAll('#areas-chips .selected').forEach(c => c.classList.remove('selected'));
+  alert('Entrada guardada ✓');
+}
+
+function renderDiario() {
+  const diario = getData(KEYS.diario);
+  const cont = document.getElementById('lista-diario');
+  if (!diario.length) {
+    cont.innerHTML = '<div class="empty-state">El diario está vacío. ¡Empezá a escribir!</div>';
+    return;
+  }
+  cont.innerHTML = diario.map((e, i) => `
+    <div class="diary-entry">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <span class="diary-date">${formatFecha(e.fecha)}</span>
+          ${e.energia ? `<span style="margin-left:0.7rem;font-size:0.8rem">${e.energia}</span>` : ''}
+          ${e.luna ? `<span class="tag">☽ ${e.luna}</span>` : ''}
+        </div>
+        <button class="btn btn-danger" onclick="eliminarEntrada(${i})">✕</button>
+      </div>
+      ${e.areas?.length ? `<div>${e.areas.map(a => `<span class="tag">${a}</span>`).join('')}</div>` : ''}
+      ${e.evento ? `<div class="diary-text" style="margin-top:0.6rem">${e.evento}</div>` : ''}
+      ${e.reflexion ? `<div class="diary-text" style="margin-top:0.5rem;font-style:italic;color:rgba(245,240,232,0.7)">${e.reflexion}</div>` : ''}
+      ${e.transitos ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:0.4rem">🪐 ${e.transitos}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function eliminarEntrada(i) {
+  if (!confirm('¿Eliminar esta entrada?')) return;
+  const d = getData(KEYS.diario);
+  d.splice(i, 1);
+  setData(KEYS.diario, d);
+  renderDiario();
+}
+
+async function analizarEntrada() {
+  const evento = document.getElementById('diar-evento').value.trim();
+  const reflexion = document.getElementById('diar-reflexion').value.trim();
+  const luna = document.getElementById('diar-luna').value.trim();
+  const transitos = document.getElementById('diar-transitos').value.trim();
+  const energia = document.getElementById('diar-energia').value;
+  const areas = getSelectedChips();
+
+  if (!evento && !reflexion) return alert('Escribí algo primero');
+
+  const cont = document.getElementById('resultado-diario');
+  cont.innerHTML = `<div class="ai-response"><div class="ai-label">☽ INTERPRETANDO</div><span class="spinner"></span> Leyendo tu entrada...</div>`;
+
+  const prompt = `${SISTEMA_BASE}
+
+Interpretá la siguiente entrada de diario integrando TODOS los marcos del sistema. Hablá en español argentino, de manera cálida y directa. Sé breve pero específico.
+
+ENTRADA DE DIARIO:
+${evento ? 'Lo que pasó: ' + evento : ''}
+${reflexion ? 'Reflexión propia: ' + reflexion : ''}
+${energia ? 'Estado de energía: ' + energia : ''}
+${luna ? 'Luna: ' + luna : ''}
+${transitos ? 'Tránsitos del día: ' + transitos : ''}
+${areas.length ? 'Áreas de vida afectadas: ' + areas.join(', ') : ''}
+
+Respondé con:
+
+🜂 LECTURA EVOLUTIVA: qué proceso del alma resuena con lo vivido.
+🜁 PSICOLÓGICO: qué arquetipo o complejo se está activando.
+🜄 ASTROGENEALOGÍA: si hay algo de este patrón que huela a herencia familiar.
+🜃 CARTA DEL TAROT (Rider-Waite): qué arcano resuena con este momento y qué mensaje trae.
+⚗ ACTO PSICOMÁGICO: una acción simbólica pequeña y concreta para integrar esta energía.
+✦ PREGUNTA PARA PROFUNDIZAR: una sola pregunta que invite a ir más adentro.`;
+
+  try {
+    const res = await callClaude(prompt);
+    cont.innerHTML = `<div class="ai-response"><div class="ai-label">☽ INTERPRETACIÓN ASTROLÓGICA</div>${res}</div>`;
+  } catch(e) {
+    cont.innerHTML = `<div class="ai-response" style="border-color:rgba(139,58,42,0.4)">Error: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// CORRELACIONES
+// ═══════════════════════════════════════════════════════
+async function analizarCorrelacion() {
+  const evento = document.getElementById('cor-evento').value.trim();
+  const fechas = document.getElementById('cor-fechas').value.trim();
+  const hipotesis = document.getElementById('cor-hipotesis').value.trim();
+  const idxCarta = document.getElementById('cor-carta').value;
+  const cartas = getData(KEYS.cartas);
+  const cartaRef = idxCarta !== '' ? cartas[parseInt(idxCarta)] : null;
+
+  if (!evento) return alert('Describí el evento o patrón a correlacionar');
+
+  const cont = document.getElementById('resultado-correlacion');
+  cont.innerHTML = `<div class="ai-response"><div class="ai-label">✦ BUSCANDO CORRELACIÓN</div><span class="spinner"></span> Analizando el patrón...</div>`;
+
+  let prompt = `${SISTEMA_BASE}\n\nAnalizá el siguiente patrón o evento integrando todos los marcos del sistema. Hablá en español argentino.\n\n`;
+  if (cartaRef) prompt += `CARTA NATAL DE REFERENCIA:\n${cartaTexto(cartaRef)}\n\n`;
+  prompt += `EVENTO/PATRÓN A CORRELACIONAR:\n${evento}\n`;
+  if (fechas) prompt += `Fechas o momentos: ${fechas}\n`;
+  if (hipotesis) prompt += `Hipótesis propia: ${hipotesis}\n`;
+  prompt += `
+🜂 EVOLUTIVO: qué aprendizaje del alma está en juego, qué quiere ser trascendido.
+🜁 PSICOLÓGICO: qué complejo, sombra o proyección opera detrás de este patrón.
+🜄 ASTROGENEALOGÍA: qué ancestro o mandato familiar podría estar en la raíz de este patrón. Qué planeta/casa en la carta lo evidencia.
+🜃 TAROT (Rider-Waite): qué arcano mayor captura la esencia de este patrón y qué enseñanza trae.
+⚗ PSICOMAGIA: un acto concreto, simbólico y creativo para interrumpir o sanar este patrón.
+✦ CORRELACIÓN ASTROLÓGICA: qué planetas, casas o aspectos en la carta están más relacionados con este patrón y qué tránsitos podrían haberlo activado.`;
+
+  try {
+    const res = await callClaude(prompt);
+    cont.innerHTML = `<div class="ai-response"><div class="ai-label">✦ ANÁLISIS DE CORRELACIÓN</div>${res}</div>`;
+  } catch(e) {
+    cont.innerHTML = `<div class="ai-response" style="border-color:rgba(139,58,42,0.4)">Error: ${e.message}</div>`;
+  }
+}
+
+async function analizarSinastria() {
+  const cartas = getData(KEYS.cartas);
+  const idx1 = document.getElementById('sin-carta1').value;
+  const idx2 = document.getElementById('sin-carta2').value;
+  const aspectos = document.getElementById('sin-aspectos').value.trim();
+  const foco = document.getElementById('sin-foco').value;
+
+  if (idx1 === '' && idx2 === '' && !aspectos) return alert('Seleccioná al menos una carta o ingresá los aspectos');
+
+  const cont = document.getElementById('resultado-sinastria');
+  cont.innerHTML = `<div class="ai-response"><div class="ai-label">♡ ANALIZANDO SINASTRÍA</div><span class="spinner"></span> Explorando el vínculo...</div>`;
+
+  const focosMap = {
+    general: 'compatibilidad general y dinámica del vínculo',
+    amor: 'atracción, romance y vínculo afectivo',
+    trabajo: 'colaboración profesional y dinámica laboral',
+    karma: 'karma, contratos de alma y aprendizajes mutuos',
+    desafios: 'tensiones, sombras y puntos de crecimiento'
+  };
+
+  let prompt = `${SISTEMA_BASE}\n\nAnalizá esta sinastría integrando todos los marcos del sistema. Hablá en español argentino.\n\n`;
+  if (idx1 !== '' && cartas[parseInt(idx1)]) prompt += `PERSONA 1:\n${cartaTexto(cartas[parseInt(idx1)])}\n\n`;
+  if (idx2 !== '' && cartas[parseInt(idx2)]) prompt += `PERSONA 2:\n${cartaTexto(cartas[parseInt(idx2)])}\n\n`;
+  if (aspectos) prompt += `ASPECTOS DE SINASTRÍA:\n${aspectos}\n\n`;
+  prompt += `FOCO: ${focosMap[foco]}
+
+🜂 EVOLUTIVO: qué aprendizaje kármico comparten, qué viene a enseñarle cada uno al otro a nivel de alma.
+🜁 PSICOLÓGICO: qué proyectan mutuamente, qué arquetipos se activan en el encuentro.
+🜄 ASTROGENEALOGÍA: si el vínculo replica algún patrón familiar de alguno de los dos.
+🜃 TAROT (Rider-Waite): qué arcano mayor describe la esencia de este vínculo.
+⚗ PSICOMAGIA: un ritual o acto simbólico que podría sanar o fortalecer este vínculo.
+✦ SÍNTESIS: potencial, tensiones principales y cómo trabajarlas juntos.`;
+
+  try {
+    const res = await callClaude(prompt);
+    cont.innerHTML = `<div class="ai-response"><div class="ai-label">♡ ANÁLISIS DE SINASTRÍA</div>${res}</div>`;
+  } catch(e) {
+    cont.innerHTML = `<div class="ai-response" style="border-color:rgba(139,58,42,0.4)">Error: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// CONSULTA LIBRE
+// ═══════════════════════════════════════════════════════
+async function consultaLibre() {
+  const pregunta = document.getElementById('cons-pregunta').value.trim();
+  const idxCarta = document.getElementById('cons-carta').value;
+  const cartas = getData(KEYS.cartas);
+  const cartaRef = idxCarta !== '' ? cartas[parseInt(idxCarta)] : null;
+
+  if (!pregunta) return alert('Escribí tu pregunta');
+
+  const cont = document.getElementById('resultado-consulta');
+  cont.innerHTML = `<div class="ai-response"><div class="ai-label">☿ RESPONDIENDO</div><span class="spinner"></span> Consultando con los astros...</div>`;
+
+  let prompt = `${SISTEMA_BASE}\n\nRespondé la siguiente consulta integrando los marcos del sistema que sean relevantes. Hablá en español argentino, de manera cálida, directa y profunda.\n\n`;
+  if (cartaRef) prompt += `CARTA NATAL DE CONTEXTO:\n${cartaTexto(cartaRef)}\n\n`;
+  prompt += `CONSULTA:\n${pregunta}\n\nSi aplica, incluí perspectiva evolutiva, psicológica, genealógica, de tarot (Rider-Waite) y/o psicomágica. Adaptá la profundidad a lo que la pregunta pide.`;
+
+  try {
+    const res = await callClaude(prompt);
+    cont.innerHTML = `<div class="ai-response"><div class="ai-label">☿ RESPUESTA</div>${res}</div>`;
+
+    // Historial
+    const hist = getData(KEYS.historial);
+    hist.unshift({ pregunta: pregunta.substring(0, 100), fecha: new Date().toLocaleDateString('es-AR') });
+    setData(KEYS.historial, hist.slice(0, 15));
+    renderHistorial();
+    document.getElementById('historial-consultas-card').style.display = 'block';
+  } catch(e) {
+    cont.innerHTML = `<div class="ai-response" style="border-color:rgba(139,58,42,0.4)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderHistorial() {
+  const hist = getData(KEYS.historial);
+  const cont = document.getElementById('historial-consultas');
+  if (!hist.length) { cont.innerHTML = ''; return; }
+  cont.innerHTML = hist.map(h => `
+    <div class="diary-entry">
+      <div class="diary-date">${h.fecha}</div>
+      <div class="diary-text" style="font-size:0.85rem;color:var(--muted)">${h.pregunta}${h.pregunta.length >= 100 ? '...' : ''}</div>
+    </div>
+  `).join('');
+}
+
+function limpiarHistorial() {
+  if (!confirm('¿Limpiar el historial?')) return;
+  setData(KEYS.historial, []);
+  renderHistorial();
+}
+
+// ═══════════════════════════════════════════════════════
+// SISTEMA BASE — Marco integrado de interpretación
+// ═══════════════════════════════════════════════════════
+const SISTEMA_BASE = `Sos un intérprete simbólico profundo que trabaja con un sistema integrado de lenguajes. Hablás en español argentino, con calidez, precisión y sin generalidades.
+
+Tu marco de trabajo integra SIEMPRE estos cinco lenguajes simbólicos:
+
+1. ASTROLOGÍA EVOLUTIVA (Jeffrey Wolf Green, Steven Forrest): el alma tiene una historia, una herida y una dirección evolutiva. Plutón, los Nodos y la Luna revelan el karma. El Nodo Norte es la brújula. Los planetas retrógrados son asuntos inconclusos del alma.
+
+2. ASTROLOGÍA PSICOLÓGICA (Liz Greene, Howard Sasportas): la carta es un mapa del inconsciente. Los planetas son arquetipos vivos. Los aspectos tensos son complejos psicológicos. El proceso de individuación (Jung) es el hilo conductor. La sombra se proyecta, los dones también.
+
+3. ASTROGENEALOGÍA: la carta natal porta el árbol genealógico. Los planetas en casas angulares o con aspectos tensos pueden reflejar mandatos, secretos, traumas o lealtades familiares inconscientes. Saturno, la Luna, Plutón y el ASC suelen ser los vectores más claros de transmisión transgeneracional. Los patrones que se repiten en la vida pueden estar repitiendo algo del linaje.
+
+4. TAROT RIDER-WAITE: cada consulta o carta natal tiene un arcano mayor que la captura. Las correspondencias clásicas (Aries=El Emperador, Escorpio=La Muerte/El Juicio, Saturno=El Mundo/El Ermitaño, etc.) son puntos de entrada, pero la intuición simbólica prima. El arcano no predice: ilumina la energía en juego y su enseñanza.
+
+5. PSICOMAGIA (Alejandro Jodorowsky): el inconsciente habla en símbolos y responde a actos simbólicos. Un acto psicomágico es concreto, poético, corporal y personalizado. No es metafórico: se hace. Diseñá actos que hablen directamente a la herida o al bloqueo que aparece en la consulta. Que sean posibles, específicos y que tengan algo de belleza o rareza jodorowskiana.
+
+Cuando integrés estos marcos, no los listés mecánicamente: tejelos. Que cada lectura sea una síntesis viva, no un cuestionario. Usá los datos concretos que tenés para anclar cada punto. Evitá las generalidades de manual. Hablá como alguien que realmente ve a esta persona.`;
+
+// ═══════════════════════════════════════════════════════
+// CLAUDE API
+// ═══════════════════════════════════════════════════════
+async function callClaude(prompt) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${response.status}`);
+  }
+  const data = await response.json();
+  return data.content.map(b => b.text || '').join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function formatFecha(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Set today's date as default
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('diar-fecha').value = hoy;
+  document.getElementById('tr-fecha-desde').value = hoy;
+
+  renderCartas();
+  renderDiario();
+  renderTransitos();
+  renderHistorial();
+  actualizarSelects();
+});
+</script>
+</body>
+</html>
